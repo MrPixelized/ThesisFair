@@ -4,12 +4,40 @@ import { readFileSync } from 'fs';
 
 import { rgraphql } from '../../libraries/amqpmessaging/index.js';
 import { Vote } from './database.js';
-import { canGetStudentVotes, canGetEntityVotes } from './permissions.js';
+import { canGetStudentVotes, canGetEntityVotes, canVote } from './permissions.js';
 
 schemaComposer.addTypeDefs(readFileSync('./src/schema.graphql').toString('utf8'));
 
-const getUid = async (studentnumber) => {
-  const res = await rgraphql('api-user', 'query getUid($studentnumber: ID!) { student(studentnumber: $studentnumber) { ... on Student { uid } } }', { studentnumber }, { user: { type: 'system' } });
+const getUid = async (uid) => {
+  const res = await rgraphql('api-user',
+    `query getUser($uid: ID!) {
+      user(uid: $uid) { uid }
+    }`,
+    { uid },
+    { user: { type: 'system' } }
+  );
+
+  if (res.errors || !res.data) {
+    console.error(res)
+    throw new Error('An unknown error occured while getting user data by id');
+  }
+
+  if (!res.data.student) {
+    return false;
+  }
+
+  return res.data.user.uid;
+}
+
+const getUidByStudentNumber = async (studentnumber) => {
+  const res = await rgraphql('api-user',
+    `query getUserByStudentNumber($studentnumber: ID!) {
+      student(studentnumber: $studentnumber) { uid }
+    }`,
+    { studentnumber },
+    { user: { type: 'system' } }
+  );
+
   if (res.errors || !res.data) {
     console.error(res);
     throw new Error('An unkown error occured while getting the user uid');
@@ -21,6 +49,26 @@ const getUid = async (studentnumber) => {
 
   return res.data.student.uid;
 }
+
+const getProject = async (pid) => {
+  const res = await rgraphql('api-project',
+    `query getPid($pid: ID!) {
+      projectByID(pid: $pid) { pid enid }
+    }`,
+    { pid: pid }
+  );
+
+  if (res.errors || !res.data) {
+    console.error(res);
+    throw new Error('An unkown error occured while looking up the project');
+  }
+
+  if (!res.data.projectByID) {
+    return false;
+  }
+
+  return res.data.projectByID;
+};
 
 const shareInfo = async (uid, enid, share = true) => {
   const res = await rgraphql('api-user', 'mutation shareInfo($uid: ID!, $enid: ID!, $share: Boolean!) { user { student { shareInfo(uid: $uid, enid: $enid, share: $share) { uid } } } }', { uid, enid, share });
@@ -179,6 +227,59 @@ schemaComposer.Mutation.addNestedFields({
       await Vote.deleteMany({ evid: args.evid });
     }
   },
+  'vote.cast': {
+    type: 'VoteCastResult',
+    args: {
+      uid: 'ID!',
+      evid: 'ID!',
+      votes: '[Pid!]!',
+    },
+    description: 'Register the given votes for the student to the database',
+    resolve: async (obj, args, req) => {
+      canVote(args, req);
+
+      let uid, evid;
+      try {
+        uid = await getUid(args.uid);
+        evid = await getEvid(args.evid);
+      } catch (error) {
+        console.log(error);
+        return { error };
+      }
+
+      if (!user) {
+        throw new Error('UserID for student not found.');
+      }
+
+      if (!evid) {
+        throw new Error('Event does not exist!');
+      }
+
+      // Map every voted projct id to a function that will update the database
+      // accordingly
+      const voteCasts = args.votes.map(async (pid) => {
+        const project = await getProject(pid);
+
+        if (!project) {
+          return { error: 'Project in vote not found.' };
+        }
+
+        const votes = await Vote.findOneAndUpdate({ uid: uid, evid: evid }, {}, { new: true, upsert: true }); // Automic find or create
+
+        const contains = !!votes.votes.find(({ pid: votePid }) => votePid == project.pid);
+        const voteItem = { pid: project.pid, enid: project.enid };
+
+        if (!contains) {
+          await Vote.updateOne({ _id: votes._id }, { $push: { votes: [voteItem] } });
+          await shareInfo(uid, project.enid);
+        }
+
+        return {};
+      })
+      
+      return Promise.all(voteCasts);
+    }
+  },
   'vote.import': {
     type: '[VoteImportResult!]!',
     args: {
@@ -221,12 +322,12 @@ Example payload:
         throw new Error('Event does not exist!');
       }
 
-      return Promise.all(
+      return await Promise.all(
         args.votes.map(async ({ studentnumber, projectID: external_pid, enabled }) => {
           let uid, project;
           try {
             [uid, project] = await Promise.all([
-              getUid(studentnumber),
+              getUidByStudentNumber(studentnumber).uid,
               getProjectData(external_pid),
             ]);
           } catch (error) {

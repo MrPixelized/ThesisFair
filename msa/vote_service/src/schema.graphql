@@ -25,3 +25,7 @@ type EventVote {
 type VoteImportResult {
   error: String
 }
+
+type VoteCastResult {
+  error: String
+}
