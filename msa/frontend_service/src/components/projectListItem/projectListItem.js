@@ -6,6 +6,8 @@ import chevronDownIcon from 'bootstrap-icons/icons/chevron-down.svg'
 import closeIcon from 'bootstrap-icons/icons/x-lg.svg'
 import gripIcon from 'bootstrap-icons/icons/grip-vertical.svg'
 
+import Tag from '../tag/tag'
+
 import './projectListItem.scss'
 
 function ProjectListItem(props) {
@@ -55,9 +57,7 @@ function ProjectListItem(props) {
         {props.project.tags && !props.selected && (
           <div className='list-item__tags'>
             {props.project.tags.map(({ fullTag, abbreviation }) => (
-              <div className='list-item__tag' key={fullTag}>
-                <p>{abbreviation.toString()}</p>
-              </div>
+              <Tag key={fullTag} label={abbreviation.toString()} />
             ))}
           </div>
         )}

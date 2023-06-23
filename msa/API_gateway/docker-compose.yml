@@ -23,6 +23,8 @@ services:
       - ./libraries:/libraries
     networks:
       - thesisfair
+    depends_on:
+      - rabbitmq
 
 networks:
   thesisfair:

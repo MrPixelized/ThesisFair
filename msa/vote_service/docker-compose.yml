@@ -16,6 +16,7 @@ services:
       - thesisfair
     depends_on:
       - mongodb
+      - rabbitmq
 
   mongodb:
     image: mongo

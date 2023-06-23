@@ -15,6 +15,9 @@ services:
     networks:
       - default
       - thesisfair
+    depends_on:
+      - mongodb
+      - rabbitmq
 
   mongodb:
     image: mongo

@@ -29,6 +29,7 @@ const getMiddleware = async () => {
     }
 
     const subexecutor = args => executor(queue, args)
+
     subschemas.push({
       schema: await introspectSchema(subexecutor),
       executor: subexecutor,
