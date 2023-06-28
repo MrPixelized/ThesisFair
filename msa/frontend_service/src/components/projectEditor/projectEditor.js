@@ -189,22 +189,22 @@ class ProjectEditor extends React.Component {
     }
   }
 
-  validate = () => Object.values(this.validation).every(f => f() === true)
-
   validateEmail = email =>
     /^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i.test(
       email
     )
 
+  validate = () => Object.values(this.validation).every(f => f() === true)
+
   validation = {
-    name: () => this.state.name.length > 0,
-    description: () => this.state.description.length > 0,
-    environment: () => this.state.environment.length > 0,
-    degrees: () => this.state.degrees.length > 0,
+    name: () => this.state.name && this.state.name.length > 0,
+    description: () => this.state.description && this.state.description.length > 0,
+    environment: () => this.state.environment && this.state.environment.length > 0,
+    degrees: () => this.state.degrees && this.state.degrees.length > 0,
     attendance: () => this.attendanceOptions.map(({ value }) => value).includes(this.state.attendance),
-    tags: () => this.state.tags.length >= 1 && this.state.tags.length <= 3,
+    tags: () => this.state.tags && this.state.tags.length >= 1 && this.state.tags.length <= 3,
     expectations: () => true,
-    email: () => this.validateEmail(this.state.email),
+    email: () => this.state.email && this.validateEmail(this.state.email),
     numberOfStudents: () => {
       const numberOfStudents = Number(this.state.numberOfStudents)
       return this.state.numberOfStudents === '' || (numberOfStudents > 0 && Number.isInteger(numberOfStudents))
