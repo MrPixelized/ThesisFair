@@ -150,6 +150,8 @@ schemaComposer.Mutation.addNestedFields({
       attendance: 'Attendance',
       environment: 'String',
       expectations: 'String',
+      email: 'String',
+      numberOfStudents: 'Int',
       datanoseLink: 'String',
       external_id: 'Int',
     },
@@ -195,6 +197,8 @@ schemaComposer.Mutation.addNestedFields({
       environment: 'String',
       tags: '[String]',
       degrees: '[Degree]',
+      email: 'String',
+      numberOfStudents: 'Int',
       datanoseLink: 'String',
     },
     description: JSON.stringify({

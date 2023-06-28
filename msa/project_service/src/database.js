@@ -15,6 +15,8 @@ const projectSchema = new mongoose.Schema({
   tags: [{type: String}],
   attendance: { type: String },
   approval: { type: String, default: () => 'awaiting' },
+  email: { type: String },
+  numberOfStudents: { type: Number },
   datanoseLink: { type: String },
   external_id: { type: Number },
 })

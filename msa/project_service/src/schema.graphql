@@ -41,6 +41,8 @@ type Project {
   expectations: String
   approval: ApprovalStatus
   attendance: Attendance
+  email: String
+  numberOfStudents: Int
   datanoseLink: String
   external_id: Int
 }
